@@ -45,9 +45,9 @@ class ADUser(object):
         if 'primaryGroupID' in retrieved_attributes:
             self.primary_group_id = retrieved_attributes['primaryGroupID'][0]
         if 'comment' in retrieved_attributes:
-            self.comment = retrieved_attributes['comment'][0].replace('\t', '*TAB*').replace('\r', '*CR*').replace('\n', '*LF*')
+            self.comment = retrieved_attributes['comment'][0].replace('\t', b'*TAB*').replace('\r', b'*CR*').replace('\n', b'*LF*')
         if 'description' in retrieved_attributes:
-            self.description = retrieved_attributes['description'][0].replace('\t', '*TAB*').replace('\r', '*CR*').replace('\n', '*LF*')
+            self.description = retrieved_attributes['description'][0].replace(b'\t', b'*TAB*').replace(b'\r', b'*CR*').replace(b'\n', b'*LF*')
         if 'homeDirectory' in retrieved_attributes:
             self.home_directory = retrieved_attributes['homeDirectory'][0]
         if 'displayName' in retrieved_attributes:
@@ -60,7 +60,7 @@ class ADUser(object):
             self.last_logon = retrieved_attributes['lastLogon'][0]
         if 'profilePath' in retrieved_attributes:
             self.profile_path = retrieved_attributes['profilePath'][0]
-        if 'lockoutTime' in retrieved_attributes and retrieved_attributes['lockoutTime'][0] is not '0':
+        if 'lockoutTime' in retrieved_attributes and retrieved_attributes['lockoutTime'][0] != '0':
             self.locked_out = 'YES'
         if 'scriptPath' in retrieved_attributes:
             self.logon_script = retrieved_attributes['scriptPath'][0]
@@ -205,7 +205,7 @@ def ldap_queries(ldap_client, base_dn, explode_nested_groups):
 
     # Loop through each group. If the membership is a range then query AD to get the full group membership
     logging.info('Exploding large groups')
-    for group_key, group_object in groups_dictionary.iteritems():
+    for group_key, group_object in groups_dictionary.items():
         if group_object.is_large_group:
             logging.debug('Getting full membership for [%s]', group_key)
             groups_dictionary[group_key].members = get_membership_with_ranges(ldap_client, base_dn, group_key)
@@ -237,24 +237,25 @@ def ldap_queries(ldap_client, base_dn, explode_nested_groups):
 
                 temp_list_a = []
                 temp_list_b = []
-
-                temp_list_a.append(groups_dictionary[grp_dn].sam_account_name)
-                temp_list_b.append(groups_dictionary[grp_dn].sam_account_name)
-                temp_list_a.append(user_object.sam_account_name)
-                temp_list_b.append(user_object.sam_account_name)
-                temp_list_a.append(user_object.get_account_flags())
-                temp_list_b.append(user_object.get_account_flags())
-                temp_list_a.append(user_object.locked_out)
-                temp_list_a.append(user_object.display_name)
-                temp_list_a.append(user_object.mail)
-                temp_list_a.append(user_object.home_directory)
-                temp_list_a.append(user_object.profile_path)
-                temp_list_a.append(user_object.logon_script)
-                temp_list_a.append(user_object.get_password_last_set_date())
-                temp_list_a.append(user_object.get_last_logon_date())
-                temp_list_a.append(user_object.comment)
-                temp_list_a.append(user_object.description)
-                _output_dictionary.append(temp_list_b)
+                try:
+                    temp_list_a.append(groups_dictionary[grp_dn].sam_account_name.decode("utf-8"))
+                    temp_list_b.append(groups_dictionary[grp_dn].sam_account_name.decode("utf-8"))
+                    temp_list_a.append(user_object.sam_account_name.decode("utf-8"))
+                    temp_list_b.append(user_object.sam_account_name.decode("utf-8"))
+                    temp_list_a.append(user_object.get_account_flags())
+                    temp_list_b.append(user_object.get_account_flags())
+                    temp_list_a.append(user_object.locked_out)
+                    temp_list_a.append(user_object.display_name.decode('utf-8'))
+                    temp_list_a.append(user_object.mail.decode('utf-8'))
+                    temp_list_a.append(user_object.home_directory)
+                    temp_list_a.append(user_object.profile_path)
+                    temp_list_a.append(user_object.logon_script)
+                    temp_list_a.append(user_object.get_password_last_set_date())
+                    temp_list_a.append(user_object.get_last_logon_date())
+                    temp_list_a.append(user_object.comment)
+                    temp_list_a.append(user_object.description)
+                    _output_dictionary.append(temp_list_b)
+                except AttributeError: pass
 
                 user_information_file.write('\t'.join(temp_list_a[1:]) + '\n')
 
@@ -273,14 +274,18 @@ def ldap_queries(ldap_client, base_dn, explode_nested_groups):
                 temp_list_a = []
                 temp_list_b = []
 
-                temp_list_a.append(groups_dictionary[grp_dn].sam_account_name)
-                temp_list_a.append(computer_object.sam_account_name)
+                try:
+                    temp_list_a.append(groups_dictionary[grp_dn].sam_account_name.decode("utf-8"))
+                    temp_list_a.append(computer_object.sam_account_name.decode("utf-8"))
 
-                temp_list_b.append(computer_object.sam_account_name)
-                temp_list_b.append(computer_object.operating_system)
-                temp_list_b.append(computer_object.operating_system_hotfix)
-                temp_list_b.append(computer_object.operating_system_service_pack)
-                temp_list_b.append(computer_object.operating_system_version)
+                    temp_list_b.append(computer_object.sam_account_name.decode("utf-8"))
+                    temp_list_b.append(computer_object.operating_system.decode("utf-8"))
+                    temp_list_b.append(computer_object.operating_system_hotfix.decode('utf-8'))
+                    temp_list_b.append(computer_object.operating_system_service_pack('utf-8'))
+                    temp_list_b.append(computer_object.operating_system_version.decode("utf-8"))
+                except AttributeError: pass
+
+                print(temp_list_b)
 
                 computer_information_file.write('\t'.join(temp_list_b) + '\n')
                 _output_dictionary.append(temp_list_a)
@@ -292,7 +297,9 @@ def ldap_queries(ldap_client, base_dn, explode_nested_groups):
         group_membership_file.write('Group Name\tSAM Account Name\tStatus\n')
 
         for element in _output_dictionary:
-            group_membership_file.write('\t'.join(element) + '\n')
+            try:
+                group_membership_file.write('\t'.join([elem.decode('utf-8') for elem in element]) + '\n')
+            except AttributeError: pass
 
 def process_group(users_dictionary, groups_dictionary, computers_dictionary, group_distinguished_name, explode_nested, base_group_name, groups_seen):
     """Builds group membership for a specified group."""
@@ -447,12 +454,12 @@ if __name__ == '__main__':
         else:
             fully_qualified_username = '{0}@{1}'.format(args.username, args.domain)
             ldap_client.simple_bind_s(fully_qualified_username, args.password)
-    except ldap.INVALID_CREDENTIALS, e:
+    except ldap.INVALID_CREDENTIALS as e:
         ldap_client.unbind()
         logging.error('Incorrect username or password')
         logging.debug(e)
         sys.exit(0)
-    except ldap.SERVER_DOWN, e:
+    except ldap.SERVER_DOWN as e:
         logging.error('LDAP server is unavailable')
         logging.debug(e)
         sys.exit(0)
