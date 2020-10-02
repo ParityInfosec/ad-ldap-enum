@@ -9,12 +9,12 @@ ad-ldap-enum outputs three tab delimited files 'Domain Group Membership.tsv', 'E
 ad-ldap-enum supports both authenticated and unauthenticated LDAP connections. Additionally, ad-ldap-enum can process nested groups and display a user's actual group membership.
 
 ### Requirements
-The package [python-ldap](http://www.python-ldap.org/index.html) is required for the script to execute. This can be installed with the following command:
+The package ldap3 is required for the script to execute. This can be installed with the following command:
 ```
-pip install python-ldap
+pip3 install ldap3
 ````
 
-Additionally, this tools has been built and tested against Python v2.7.13 and python-ldap v2.4.20
+Additionally, this tools has been tested against Python v3.8.5 and ldap3 v2.7
 
 ### Usage
 ```
